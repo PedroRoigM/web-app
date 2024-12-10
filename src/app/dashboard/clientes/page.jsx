@@ -11,7 +11,7 @@ export default function Page() {
     const [clientData, setClientData] = useState({
         name: "",
         cif: "",
-        logo: "", // Nuevo campo para el logo
+        logo: "",
         address: {
             street: "",
             number: "",
@@ -20,11 +20,12 @@ export default function Page() {
             province: ""
         }
     });
+    const [errors, setErrors] = useState({}); // Estado para errores
+
     useEffect(() => {
         const fetchClients = async () => {
             try {
                 const data = await getClients();
-                console.log(data);
                 setClients(data);
             } catch (error) {
                 console.error("Error fetching clients:", error);
@@ -33,6 +34,23 @@ export default function Page() {
 
         fetchClients();
     }, []);
+
+    const validateFields = () => {
+        const newErrors = {};
+        if (!clientData.name) newErrors.name = "El nombre es obligatorio.";
+        if (!clientData.cif) newErrors.cif = "El CIF es obligatorio.";
+        if (clientData.logo && !/^https?:\/\/.*\.(jpg|jpeg|png|gif|webp)$/.test(clientData.logo)) {
+            newErrors.logo = "El logo debe ser una URL válida.";
+        }
+        if (!clientData.address.street) newErrors["address.street"] = "La calle es obligatoria.";
+        if (!clientData.address.number) newErrors["address.number"] = "El número es obligatorio.";
+        if (!clientData.address.postal) newErrors["address.postal"] = "El código postal es obligatorio.";
+        if (!clientData.address.city) newErrors["address.city"] = "La ciudad es obligatoria.";
+        if (!clientData.address.province) newErrors["address.province"] = "La provincia es obligatoria.";
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -51,18 +69,20 @@ export default function Page() {
                 [name]: value,
             }));
         }
+
+        setErrors((prevErrors) => ({ ...prevErrors, [name]: null })); // Limpia el error del campo
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (!validateFields()) return;
+
         try {
             const user = await createClient(clientData);
 
-            // Agrega el nuevo cliente a la lista de clientes existentes
             setClients((prevClients) => [...prevClients, user]);
 
-            // Oculta el formulario tras guardar
             setIsCreating(false);
         } catch (error) {
             console.error("Error al crear el cliente:", error);
@@ -184,6 +204,9 @@ export default function Page() {
                                     className="w-full mt-1 p-2 border border-gray-300 rounded-lg"
                                     required
                                 />
+                                {errors.name && (
+                                    <p className="text-red-500 text-sm">{errors.name}</p>
+                                )}
                             </div>
                             {/* CIF */}
                             <div>
@@ -198,6 +221,9 @@ export default function Page() {
                                     className="w-full mt-1 p-2 border border-gray-300 rounded-lg"
                                     required
                                 />
+                                {errors.cif && (
+                                    <p className="text-red-500 text-sm">{errors.cif}</p>
+                                )}
                             </div>
                             {/* Logo */}
                             <div>
@@ -212,6 +238,9 @@ export default function Page() {
                                     onChange={handleInputChange}
                                     className="w-full mt-1 p-2 border border-gray-300 rounded-lg"
                                 />
+                                {errors.logo && (
+                                    <p className="text-red-500 text-sm">{errors.logo}</p>
+                                )}
                             </div>
                             {/* Address Fields */}
                             <div>
@@ -219,53 +248,83 @@ export default function Page() {
                                     Dirección
                                 </label>
                                 <div className="grid grid-cols-2 gap-4 mt-1">
-                                    <input
-                                        type="text"
-                                        name="address.street"
-                                        placeholder="Calle"
-                                        value={clientData.address.street}
-                                        onChange={handleInputChange}
-                                        className="p-2 border border-gray-300 rounded-lg"
-                                        required
-                                    />
-                                    <input
-                                        type="number"
-                                        name="address.number"
-                                        placeholder="Número"
-                                        value={clientData.address.number}
-                                        onChange={handleInputChange}
-                                        className="p-2 border border-gray-300 rounded-lg"
-                                        required
-                                    />
+                                    {/* Calle */}
+                                    <div>
+                                        <input
+                                            type="text"
+                                            name="address.street"
+                                            placeholder="Calle"
+                                            value={clientData.address.street}
+                                            onChange={handleInputChange}
+                                            className="p-2 border border-gray-300 rounded-lg"
+                                            required
+                                        />
+                                        {errors["address.street"] && (
+                                            <p className="text-red-500 text-sm">{errors["address.street"]}</p>
+                                        )}
+                                    </div>
+                                    {/* Número */}
+                                    <div>
+                                        <input
+                                            type="number"
+                                            name="address.number"
+                                            placeholder="Número"
+                                            value={clientData.address.number}
+                                            onChange={handleInputChange}
+                                            className="p-2 border border-gray-300 rounded-lg"
+                                            required
+                                        />
+                                        {errors["address.number"] && (
+                                            <p className="text-red-500 text-sm">{errors["address.number"]}</p>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="grid grid-cols-3 gap-4 mt-4">
-                                    <input
-                                        type="number"
-                                        name="address.postal"
-                                        placeholder="Código Postal"
-                                        value={clientData.address.postal}
-                                        onChange={handleInputChange}
-                                        className="p-2 border border-gray-300 rounded-lg"
-                                        required
-                                    />
-                                    <input
-                                        type="text"
-                                        name="address.city"
-                                        placeholder="Ciudad"
-                                        value={clientData.address.city}
-                                        onChange={handleInputChange}
-                                        className="p-2 border border-gray-300 rounded-lg"
-                                        required
-                                    />
-                                    <input
-                                        type="text"
-                                        name="address.province"
-                                        placeholder="Provincia"
-                                        value={clientData.address.province}
-                                        onChange={handleInputChange}
-                                        className="p-2 border border-gray-300 rounded-lg"
-                                        required
-                                    />
+                                    {/* Código Postal */}
+                                    <div>
+                                        <input
+                                            type="number"
+                                            name="address.postal"
+                                            placeholder="Código Postal"
+                                            value={clientData.address.postal}
+                                            onChange={handleInputChange}
+                                            className="p-2 border border-gray-300 rounded-lg"
+                                            required
+                                        />
+                                        {errors["address.postal"] && (
+                                            <p className="text-red-500 text-sm">{errors["address.postal"]}</p>
+                                        )}
+                                    </div>
+                                    {/* Ciudad */}
+                                    <div>
+                                        <input
+                                            type="text"
+                                            name="address.city"
+                                            placeholder="Ciudad"
+                                            value={clientData.address.city}
+                                            onChange={handleInputChange}
+                                            className="p-2 border border-gray-300 rounded-lg"
+                                            required
+                                        />
+                                        {errors["address.city"] && (
+                                            <p className="text-red-500 text-sm">{errors["address.city"]}</p>
+                                        )}
+                                    </div>
+                                    {/* Provincia */}
+                                    <div>
+                                        <input
+                                            type="text"
+                                            name="address.province"
+                                            placeholder="Provincia"
+                                            value={clientData.address.province}
+                                            onChange={handleInputChange}
+                                            className="p-2 border border-gray-300 rounded-lg"
+                                            required
+                                        />
+                                        {errors["address.province"] && (
+                                            <p className="text-red-500 text-sm">{errors["address.province"]}</p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -286,6 +345,7 @@ export default function Page() {
                             </button>
                         </div>
                     </form>
+
                 )}
             </main>
         </div>

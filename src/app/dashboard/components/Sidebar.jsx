@@ -4,25 +4,6 @@ import Link from "next/link";
 import { useEffect } from "react";
 import getUser from "../../lib/getUser";
 export default function Sidebar() {
-    let verified = false;
-    useEffect(() => {
-        const handleGoogleLogin = async () => {
-            const response = await getUser();
-            if (!response) {
-                window.location.href = "/";
-            }
-            verified = true;
-        }
-
-        handleGoogleLogin();
-    }, []);
-    if (!verified) {
-        return (
-            <div>
-
-            </div>
-        )
-    }
     return (
         <div className="w-40 h-[100vh] bg-white px-4 py-6 flex flex-col border-black">
             <Link href="/dashboard">

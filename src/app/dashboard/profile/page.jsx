@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import changeUserInfo from "@/app/lib/changeUserInfo";
 import changeLogoInfo from "@/app/lib/changeLogoInfo";
 import LoadingScreen from "../components/Loading";
+
 export default function Profile() {
     const [hasUser, setHasUser] = useState(false);
     const [user, setUser] = useState({});
@@ -17,12 +18,18 @@ export default function Profile() {
         surnames: "",
         nif: "",
     });
+    const [errors, setErrors] = useState({}); // Para capturar errores de cada campo
 
     useEffect(() => {
         const fetchUser = async () => {
-            const userData = await getUser();
-            setUser(userData);
-            setHasUser(true);
+            try {
+                const userData = await getUser();
+                setUser(userData);
+                setHasUser(true);
+            } catch (error) {
+                setErrors({ general: "Error al cargar los datos del usuario. Intenta más tarde." });
+                console.error(error);
+            }
         };
         fetchUser();
     }, []);
@@ -49,18 +56,67 @@ export default function Profile() {
         }));
     };
 
+    const validateForm = () => {
+        let formErrors = {};
+        let isValid = true;
+
+        if (!formData.name.trim()) {
+            formErrors.name = "El nombre es obligatorio.";
+            isValid = false;
+        }
+        if (!formData.surnames.trim()) {
+            formErrors.surnames = "Los apellidos son obligatorios.";
+            isValid = false;
+        }
+        if (!formData.role.trim()) {
+            formErrors.role = "El rol es obligatorio.";
+            isValid = false;
+        }
+        if (!formData.nif.trim()) {
+            formErrors.nif = "El NIF es obligatorio.";
+            isValid = false;
+        }
+        if (formData.logo && !/^https?:\/\/.+\.(jpg|jpeg|png|gif)$/i.test(formData.logo)) {
+            formErrors.logo = "La URL del logo debe ser válida.";
+            isValid = false;
+        }
+
+        setErrors(formErrors);
+        return isValid;
+    };
+
     const handleSubmit = async () => {
-        await changeUserInfo(formData);
-        setChange(false);
+        if (!validateForm()) {
+            return; // Evitamos el submit si hay errores
+        }
+
+        try {
+            await changeUserInfo(formData);
+            setChange(false);
+            setErrors({}); // Limpiar errores previos si el envío fue exitoso
+        } catch (error) {
+            setErrors({ general: "Error al guardar los cambios. Intenta más tarde." });
+            console.error(error);
+        }
     };
 
     const handleLogoSubmit = async () => {
-        await changeUserInfo(formData);
-        setChangeLogo(false);
+        if (!validateForm()) {
+            return; // Evitamos el submit si hay errores
+        }
+
+        try {
+            await changeLogoInfo(formData);
+            setChangeLogo(false);
+            setErrors({}); // Limpiar errores previos si el envío fue exitoso
+        } catch (error) {
+            setErrors({ general: "Error al cambiar el logo. Intenta más tarde." });
+            console.error(error);
+        }
     };
 
     return (
-        <div className="flex flex-col items-center w-full p-6 space-y-6 border rounded-lg shadow-lg  h-full">
+        <div className="flex flex-col items-center w-full p-6 space-y-6 border rounded-lg shadow-lg h-full">
             {hasUser ? (
                 <div className="flex flex-col items-center p-6 bg-white rounded-lg shadow-md">
                     {/* Imagen del usuario */}
@@ -115,122 +171,96 @@ export default function Profile() {
                         </button>
                     </div>
                 </div>
-
             ) : (
                 <LoadingScreen />
             )}
 
-
-
-            {/* Modal para cambiar la imagen (logo) */}
-            {
-                changeLogo && (
-                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                        <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-                            <h2 className="text-lg font-semibold text-gray-800 mb-4">Cambiar Imagen</h2>
-                            <form className="space-y-4">
-                                <div>
-                                    <label className="block text-gray-700">Nuevo Logo (URL)</label>
-                                    <input
-                                        type="text"
-                                        name="logo"
-                                        value={formData.logo}
-                                        onChange={handleInputChange}
-                                        className="w-full p-2 border rounded-lg"
-                                    />
-                                </div>
-                                <div className="flex justify-end space-x-4">
-                                    <button
-                                        type="button"
-                                        className="bg-gray-500 text-white px-4 py-2 rounded-lg"
-                                        onClick={() => setChangeLogo(false)}
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className="bg-blue-500 text-white px-4 py-2 rounded-lg"
-                                        onClick={handleLogoSubmit}
-                                    >
-                                        Guardar Logo
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>)
-
-            }
+            {/* Mostrar error general si existe */}
+            {errors.general && (
+                <div className="text-red-500 text-center mt-4">
+                    <p>{errors.general}</p>
+                </div>
+            )}
 
             {/* Modal para cambiar la información personal */}
-            {
-                change && (
-                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                        <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-                            <h2 className="text-lg font-semibold text-gray-800 mb-4">Editar Parámetros</h2>
-                            <form className="space-y-4">
-                                {/* Campos de formulario */}
-                                <div>
-                                    <label className="block text-gray-700">Nombre</label>
-                                    <input
-                                        type="text"
-                                        name="name"
-                                        value={formData.name}
-                                        onChange={handleInputChange}
-                                        className="w-full p-2 border rounded-lg"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-gray-700">Apellidos</label>
-                                    <input
-                                        type="text"
-                                        name="surnames"
-                                        value={formData.surnames}
-                                        onChange={handleInputChange}
-                                        className="w-full p-2 border rounded-lg"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-gray-700">Rol</label>
-                                    <input
-                                        type="text"
-                                        name="role"
-                                        value={formData.role}
-                                        onChange={handleInputChange}
-                                        className="w-full p-2 border rounded-lg"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-gray-700">NIF</label>
-                                    <input
-                                        type="text"
-                                        name="nif"
-                                        value={formData.nif}
-                                        onChange={handleInputChange}
-                                        className="w-full p-2 border rounded-lg"
-                                    />
-                                </div>
-                                {/* Botones de cancelar y guardar */}
-                                <div className="flex justify-end space-x-4">
-                                    <button
-                                        type="button"
-                                        className="bg-gray-500 text-white px-4 py-2 rounded-lg"
-                                        onClick={() => setChange(false)}
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className="bg-blue-500 text-white px-4 py-2 rounded-lg"
-                                        onClick={handleSubmit}
-                                    >
-                                        Guardar
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+            {change && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+                        <h2 className="text-lg font-semibold text-gray-800 mb-4">Editar Parámetros</h2>
+                        <form className="space-y-4">
+                            {/* Nombre */}
+                            <div>
+                                <label className="block text-gray-700">Nombre</label>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleInputChange}
+                                    className="w-full p-2 border rounded-lg"
+                                />
+                                {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
+                            </div>
+
+                            {/* Apellidos */}
+                            <div>
+                                <label className="block text-gray-700">Apellidos</label>
+                                <input
+                                    type="text"
+                                    name="surnames"
+                                    value={formData.surnames}
+                                    onChange={handleInputChange}
+                                    className="w-full p-2 border rounded-lg"
+                                />
+                                {errors.surnames && <p className="text-red-500 text-sm">{errors.surnames}</p>}
+                            </div>
+
+                            {/* Rol */}
+                            <div>
+                                <label className="block text-gray-700">Rol</label>
+                                <input
+                                    type="text"
+                                    name="role"
+                                    value={formData.role}
+                                    onChange={handleInputChange}
+                                    className="w-full p-2 border rounded-lg"
+                                />
+                                {errors.role && <p className="text-red-500 text-sm">{errors.role}</p>}
+                            </div>
+
+                            {/* NIF */}
+                            <div>
+                                <label className="block text-gray-700">NIF</label>
+                                <input
+                                    type="text"
+                                    name="nif"
+                                    value={formData.nif}
+                                    onChange={handleInputChange}
+                                    className="w-full p-2 border rounded-lg"
+                                />
+                                {errors.nif && <p className="text-red-500 text-sm">{errors.nif}</p>}
+                            </div>
+
+                            {/* Botones de cancelar y guardar */}
+                            <div className="flex justify-end space-x-4">
+                                <button
+                                    type="button"
+                                    className="bg-gray-500 text-white px-4 py-2 rounded-lg"
+                                    onClick={() => setChange(false)}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="button"
+                                    className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+                                    onClick={handleSubmit}
+                                >
+                                    Guardar
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                )
-            }
-        </div >
+                </div>
+            )}
+        </div>
     );
 }

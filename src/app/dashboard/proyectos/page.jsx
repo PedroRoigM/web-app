@@ -20,10 +20,10 @@ export default function Home() {
         code: "",
         clientId: ""
     });
+    const [errors, setErrors] = useState({});
     const [showModal, setShowModal] = useState(false);
     const [clients, setClients] = useState({});
 
-    // Manejar cambios en el formulario de nuevo proyecto
     const handleInputChange = (e) => {
         const { name, value } = e.target;
 
@@ -43,6 +43,13 @@ export default function Home() {
                 [name]: value
             }));
         }
+
+        // Limpiar errores al modificar un campo
+        setErrors((prevErrors) => {
+            const newErrors = { ...prevErrors };
+            delete newErrors[name];
+            return newErrors;
+        });
     };
 
     // Simular la carga inicial de proyectos
@@ -63,14 +70,18 @@ export default function Home() {
     }, []);
 
     // Guardar un nuevo proyecto
-    const handleAddProject = () => {
+    const handleAddProject = async () => {
+        if (!validateInputs()) {
+            return;
+        }
+
         try {
-            postProject(newProject);
+            await postProject(newProject); // Esperar a que se complete
             setProjects((prev) => [
                 ...prev,
-                { ...newProject, id: projects.length + 1, status: "Nuevo" }
+                { ...newProject, id: prev.length + 1, status: "Nuevo" }
             ]);
-            setShowModal(false); // Cerrar el modal
+            setShowModal(false);
             setNewProject({
                 name: "",
                 projectCode: "",
@@ -86,9 +97,8 @@ export default function Home() {
                 clientId: "",
                 logo: ""
             });
-
         } catch (error) {
-            console.error("Error al crear el proyecto:", error);
+            console.error("Error creating project:", error);
         }
     };
     const fetchClients = async () => {
@@ -100,7 +110,41 @@ export default function Home() {
             console.error("Error fetching clients:", error);
         }
     };
+    const validateInputs = () => {
+        const newErrors = {};
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+        if (!newProject.name.trim()) {
+            newErrors.name = "Name is required.";
+        }
+        if (!newProject.projectCode.trim()) {
+            newErrors.projectCode = "Project code is required.";
+        }
+        if (!emailRegex.test(newProject.email)) {
+            newErrors.email = "Enter a valid email address.";
+        }
+        if (!newProject.address.street.trim()) {
+            newErrors.street = "Street is required.";
+        }
+        if (!newProject.address.number || isNaN(newProject.address.number)) {
+            newErrors.number = "Number must be a valid number.";
+        }
+        if (!newProject.address.postal || isNaN(newProject.address.postal)) {
+            newErrors.postal = "Postal code must be a valid number.";
+        }
+        if (!newProject.address.city.trim()) {
+            newErrors.city = "City is required.";
+        }
+        if (!newProject.address.province.trim()) {
+            newErrors.province = "Province is required.";
+        }
+        if (!newProject.clientId.trim()) {
+            newErrors.clientId = "Client is required.";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
     return (
         <div className="flex-1">
@@ -175,8 +219,12 @@ export default function Home() {
                                         name="name"
                                         value={newProject.name}
                                         onChange={handleInputChange}
-                                        className="w-full p-2 border rounded-lg"
+                                        className={`w-full p-2 border rounded-lg ${errors.name ? "border-red-500" : "border-gray-300"
+                                            }`}
                                     />
+                                    {errors.name && (
+                                        <p className="text-sm text-red-500">{errors.name}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-gray-700 font-medium">Código del Proyecto</label>
@@ -185,8 +233,12 @@ export default function Home() {
                                         name="projectCode"
                                         value={newProject.projectCode}
                                         onChange={handleInputChange}
-                                        className="w-full p-2 border rounded-lg"
+                                        className={`w-full p-2 border rounded-lg ${errors.projectCode ? "border-red-500" : "border-gray-300"
+                                            }`}
                                     />
+                                    {errors.projectCode && (
+                                        <p className="text-sm text-red-500">{errors.projectCode}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-gray-700 font-medium">Email</label>
@@ -195,8 +247,12 @@ export default function Home() {
                                         name="email"
                                         value={newProject.email}
                                         onChange={handleInputChange}
-                                        className="w-full p-2 border rounded-lg"
+                                        className={`w-full p-2 border rounded-lg ${errors.email ? "border-red-500" : "border-gray-300"
+                                            }`}
                                     />
+                                    {errors.email && (
+                                        <p className="text-sm text-red-500">{errors.email}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-gray-700 font-medium">Código Interno</label>
@@ -205,8 +261,12 @@ export default function Home() {
                                         name="code"
                                         value={newProject.code}
                                         onChange={handleInputChange}
-                                        className="w-full p-2 border rounded-lg"
+                                        className={`w-full p-2 border rounded-lg ${errors.code ? "border-red-500" : "border-gray-300"
+                                            }`}
                                     />
+                                    {errors.code && (
+                                        <p className="text-sm text-red-500">{errors.code}</p>
+                                    )}
                                 </div>
                             </div>
 
@@ -219,8 +279,12 @@ export default function Home() {
                                         name="address.street"
                                         value={newProject.address.street}
                                         onChange={handleInputChange}
-                                        className="w-full p-2 border rounded-lg"
+                                        className={`w-full p-2 border rounded-lg ${errors["address.street"] ? "border-red-500" : "border-gray-300"
+                                            }`}
                                     />
+                                    {errors["address.street"] && (
+                                        <p className="text-sm text-red-500">{errors["address.street"]}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-gray-700 font-medium">Número</label>
@@ -229,8 +293,12 @@ export default function Home() {
                                         name="address.number"
                                         value={newProject.address.number}
                                         onChange={handleInputChange}
-                                        className="w-full p-2 border rounded-lg"
+                                        className={`w-full p-2 border rounded-lg ${errors["address.number"] ? "border-red-500" : "border-gray-300"
+                                            }`}
                                     />
+                                    {errors["address.number"] && (
+                                        <p className="text-sm text-red-500">{errors["address.number"]}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-gray-700 font-medium">Código Postal</label>
@@ -239,8 +307,12 @@ export default function Home() {
                                         name="address.postal"
                                         value={newProject.address.postal}
                                         onChange={handleInputChange}
-                                        className="w-full p-2 border rounded-lg"
+                                        className={`w-full p-2 border rounded-lg ${errors["address.postal"] ? "border-red-500" : "border-gray-300"
+                                            }`}
                                     />
+                                    {errors["address.postal"] && (
+                                        <p className="text-sm text-red-500">{errors["address.postal"]}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-gray-700 font-medium">Ciudad</label>
@@ -249,8 +321,12 @@ export default function Home() {
                                         name="address.city"
                                         value={newProject.address.city}
                                         onChange={handleInputChange}
-                                        className="w-full p-2 border rounded-lg"
+                                        className={`w-full p-2 border rounded-lg ${errors["address.city"] ? "border-red-500" : "border-gray-300"
+                                            }`}
                                     />
+                                    {errors["address.city"] && (
+                                        <p className="text-sm text-red-500">{errors["address.city"]}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-gray-700 font-medium">Provincia</label>
@@ -259,8 +335,12 @@ export default function Home() {
                                         name="address.province"
                                         value={newProject.address.province}
                                         onChange={handleInputChange}
-                                        className="w-full p-2 border rounded-lg"
+                                        className={`w-full p-2 border rounded-lg ${errors["address.province"] ? "border-red-500" : "border-gray-300"
+                                            }`}
                                     />
+                                    {errors["address.province"] && (
+                                        <p className="text-sm text-red-500">{errors["address.province"]}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-gray-700 font-medium">Cliente</label>
@@ -268,7 +348,8 @@ export default function Home() {
                                         name="clientId"
                                         value={newProject.clientId}
                                         onChange={handleInputChange}
-                                        className="w-full p-2 border rounded-lg"
+                                        className={`w-full p-2 border rounded-lg ${errors.clientId ? "border-red-500" : "border-gray-300"
+                                            }`}
                                     >
                                         <option value="" disabled>Seleccione un cliente</option>
                                         {clients.map((cliente) => (
@@ -277,6 +358,9 @@ export default function Home() {
                                             </option>
                                         ))}
                                     </select>
+                                    {errors.clientId && (
+                                        <p className="text-sm text-red-500">{errors.clientId}</p>
+                                    )}
                                 </div>
                             </div>
                         </form>
